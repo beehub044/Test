@@ -1,10 +1,10 @@
 --[[
 
-    Eggs ESP Menu v2.2 - AutoFarm + Iconos
+    BEE HUB 🐝 🍯 | PREMIUM 👑 v10.4 - AutoFarm + Iconos
 
-    By ThiAez
+    By PC DEV BEE 🐝 
 
-    MEJORAS:
+    BEE HUB:
 
     - ESP con aura + nombre + distancia
 
@@ -1776,7 +1776,7 @@ TPHomeBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 
 TPHomeBtn.BackgroundTransparency = 0.18
 
-TPHomeBtn.Text = "🏠 TP Inicio"
+TPHomeBtn.Text = "🐝🍯 TP HOME 🍯🐝"
 
 TPHomeBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
 
@@ -2432,7 +2432,7 @@ local function createEggListItem(egg, itemHeight, textSize)
 
             GreenESPBtn.BackgroundColor3 = Color3.fromRGB(230, 200, 0)
 
-            StatusLabel.Text = "● ESP amarillo: " .. egg.Name
+            StatusLabel.Text = "● ESP EGG BEEHUB 🐝🍯 : " .. egg.Name
 
         else
 
@@ -2440,7 +2440,7 @@ local function createEggListItem(egg, itemHeight, textSize)
 
             GreenESPBtn.BackgroundColor3 = Color3.fromRGB(180, 150, 0)
 
-            StatusLabel.Text = "● ESP amarillo apagado"
+            StatusLabel.Text = "● ESP EGG BEEHUB 🐝🍯"
 
         end
 
