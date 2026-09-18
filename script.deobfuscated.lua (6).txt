@@ -1,0 +1,2243 @@
+local destroy = getgenv().__nemo_hub and getgenv().__nemo_hub.destroy
+
+if destroy then
+  pcall(function()
+    getgenv().__nemo_hub.destroy()
+    return
+  end)
+end
+
+local element = game
+
+local element2 = element.GetService(element, "Players")
+
+local runService = game:GetService("RunService")
+
+local workspace = game:GetService("Workspace")
+
+local userInputService = game:GetService("UserInputService")
+local localPlayer = element2.LocalPlayer
+local currentCamera = workspace.CurrentCamera
+
+local val = {
+  FOLDER_NAME = "RenderedEggs", DRAW_HIGHLIGHT = true, DRAW_NAME = true, DRAW_DISTANCE = true, DRAW_LUCK = true, MAX_DISTANCE = 5000, HIGHLIGHT_COLOR = (Color3.fromRGB(255, 215, 0)), NAME_COLOR = (Color3.fromRGB(255, 255, 255)), LUCK_COLOR = (Color3.fromRGB(255, 120, 220)), TOGGLE_KEY = Enum.KeyCode.RightControl, PANEL_KEY = Enum.KeyCode.RightShift, PLOT_KEY = Enum.KeyCode.RightAlt, AUTOFARM_KEY = Enum.KeyCode.M, NOCLIP_KEY = Enum.KeyCode.RightBracket, AUTO_PLOT_TELEPORT = true, PLOTS_FOLDER = "Plots", PLOT_OWNER_PATHS = {
+    { "Plot", "Data", "Owner" }, { "Plot", "Owner" }, { "Data", "Owner" }, { "Owner" }, }, PLOT_COOLDOWN = 1.5, PLOT_TELEPORT_HEIGHT = 5, PLOT_SPAWN_NAMES = {
+    "Spawn", "SpawnLocation", "SpawnPoint", "Base", "Ground", "Center", "Middle", "PlotCenter", "SpawnPad", "SpawnArea", }, TWEEN_DURATION = 10, EGG_TWEEN_DURATION = 2, TWEEN_ARRIVE_DIST = 3, AUTOFARM_EGG_DURATION = 2, AUTOFARM_PLOT_DURATION = 10, AUTOFARM_HOP_DELAY = 0.4, AUTOFARM_COLLECT_WAIT = 5, AUTOFARM_PLOT_SETTLE = 4, AUTOFARM_FIRE_PROMPT = true, AUTOFARM_PROMPT_WAIT = 0.3, AUTOFARM_RETURN_TO_PLOT = true, NOCLIP_DURING_TWEEN = true, NOCLIP_PERSISTENT = false, }
+
+local coreGui
+
+if gethui then
+  local val2, success
+  val2, success = pcall(gethui)
+
+  if val2 and success then
+    coreGui = success
+  end
+end
+
+if not coreGui then
+  local playerGui, val3
+  val3, playerGui = pcall(function() return localPlayer:WaitForChild("PlayerGui") end)
+
+  if val3 and playerGui then
+    coreGui = playerGui
+  end
+end
+
+if not coreGui then
+
+  coreGui = game:GetService("CoreGui")
+end
+
+local function iterate()
+  local character = localPlayer.Character
+
+  if not character then
+    return
+  else
+    for index, value in ipairs(character:GetDescendants()) do
+      local element3 = value
+
+      if (element3:IsA("BasePart")) and element3.Name ~= "HumanoidRootPart" then
+        pcall(function()
+          element3.CanCollide = true
+          return
+        end)
+      end
+    end
+
+    return
+  end
+end
+
+local function safeCall(val4)
+
+  if not val4 then
+    return nil
+  else
+    if (val4:IsA("BasePart")) then
+      return val4.Position
+    else
+      if (val4:IsA("Model")) then
+
+        if val4.PrimaryPart and val4.PrimaryPart.Parent then
+          return val4.PrimaryPart.Position
+        else
+          local handle = val4:FindFirstChild("Handle")
+
+          if handle and handle:IsA("BasePart") then
+            return handle.Position
+          else
+            local basePart = val4:FindFirstChildWhichIsA("BasePart")
+
+            if basePart then
+              return basePart.Position
+            else
+              local success2, val5
+              val5, success2 = pcall(function() return val4:GetBoundingBox() end)
+
+              if val5 and success2 then
+                return success2.Position
+              else
+                return nil
+              end
+            end
+          end
+        end
+      else
+        return nil
+      end
+    end
+  end
+end
+
+local val6 = {}
+
+local function safeCall2(val7)
+  local element4 = val6[val7]
+
+  if not element4 then
+    return
+  else
+    if element4.highlight then
+      pcall(function()
+
+        element4.highlight:Destroy()
+        return
+      end)
+    end
+
+    if element4.billboard then
+      pcall(function()
+
+        element4.billboard:Destroy()
+        return
+      end)
+    end
+
+    val6[val7] = nil
+    return
+  end
+end
+
+local val8 = true
+local val9 = {}
+local count = 0
+local val10 = 0
+
+local function helper(val11)
+  if val11 >= 1000000000000000 then
+    return string.format("%.1fQ", val11 / 1000000000000000)
+  else
+    if val11 >= 1000000000000 then
+      return string.format("%.1fT", val11 / 1000000000000)
+    else
+      if val11 >= 1000000000 then
+        return string.format("%.1fB", val11 / 1000000000)
+      else
+        if val11 >= 1000000 then
+          return string.format("%.1fM", val11 / 1000000)
+        else
+          if val11 >= 1000 then
+            return string.format("%.1fK", val11 / 1000)
+          else
+            return tostring(math.floor(val11))
+          end
+        end
+      end
+    end
+  end
+end
+
+local noclipPERSISTENT = val.NOCLIP_PERSISTENT
+
+local function helper2()
+  return workspace:FindFirstChild(val.FOLDER_NAME)
+end
+
+local function iterate2()
+  local val12 = -math.huge
+  local val13
+
+  for key, value2 in pairs(val6) do
+    if key.Parent then
+      local luck = value2.luck or 0
+
+      if luck > val12 then
+        val12 = luck
+        val13 = key
+      end
+    end
+  end
+
+  return val13, val12
+end
+
+local function helper3(val14)
+
+  if val14 == nil then
+    return 0
+  else
+
+    local strVal, val15
+    val15, strVal = tostring(val14):upper():gsub("%s", ""):gsub(",", ""):match("([%d%.]+)([KMBTQ]?)")
+
+    if not val15 then
+      return 0
+    else
+      local numVal = (tonumber(val15)) or 0
+
+      if strVal == "K" then
+        numVal = numVal * 1000
+      else
+        if strVal == "M" then
+          numVal = numVal * 1000000
+        else
+          if strVal == "B" then
+            numVal = numVal * 1000000000
+          else
+            if strVal == "T" then
+              numVal = numVal * 1000000000000
+            else
+              if strVal == "Q" then
+                numVal = numVal * 1000000000000000
+              end
+            end
+          end
+        end
+      end
+
+      return numVal
+    end
+  end
+end
+
+local val16 = false
+
+local function iterate3(val17)
+  if not val17 then
+    return nil
+  else
+    local proximityPrompt = val17:FindFirstChildOfClass("ProximityPrompt")
+
+    if proximityPrompt then
+      return proximityPrompt
+    else
+      local handle2 = val17:FindFirstChild("Handle")
+
+      if handle2 then
+        local proximityPrompt2 = handle2:FindFirstChildOfClass("ProximityPrompt")
+
+        if proximityPrompt2 then
+          return proximityPrompt2
+        else
+          for index2, value3 in ipairs(handle2:GetDescendants()) do
+            if (value3:IsA("ProximityPrompt")) then
+              return value3
+            end
+          end
+
+          ::L12607056::
+
+          for index3, value4 in ipairs(val17:GetDescendants()) do
+            if (value4:IsA("ProximityPrompt")) then
+              return value4
+            end
+          end
+
+          return nil
+        end
+      else
+        goto L12607056
+      end
+    end
+  end
+end
+
+local function helper4(val18)
+
+  if not val18 then
+    return 0
+  else
+    local handle3 = val18:FindFirstChild("Handle")
+
+    if not handle3 then
+      return 0
+    else
+      local eggLuck = handle3:FindFirstChild("EggLuck")
+
+      if not eggLuck then
+        return 0
+      else
+        local luck2 = eggLuck:FindFirstChild("Luck")
+
+        if not luck2 then
+          return 0
+        else
+          local text = luck2.Text
+
+          if text ~= nil and (tostring(text)) ~= "" then
+            return helper3(text)
+          else
+            return 0
+          end
+        end
+      end
+    end
+  end
+end
+
+local function iterate4(val19)
+  if not val19 then
+    return
+  else
+    for index4, value5 in ipairs(val19:GetDescendants()) do
+      local element5 = value5
+
+      if (element5:IsA("BasePart")) then
+        pcall(function()
+          element5.CanCollide = false
+          return
+        end)
+      end
+    end
+
+    return
+  end
+end
+
+local connect
+
+local function safeCall3()
+  if connect then
+    pcall(function()
+
+      connect:Disconnect()
+      return
+    end)
+
+    connect = nil
+  end
+
+  return
+end
+
+local function helper5(val20)
+
+  if (val20:IsA("Model")) then
+    if val20.PrimaryPart then
+      return val20.PrimaryPart
+    else
+      local handle4 = val20:FindFirstChild("Handle")
+
+      if handle4 and handle4:IsA("BasePart") then
+        return handle4
+      else
+
+        return (val20:FindFirstChildWhichIsA("BasePart")) or val20
+      end
+    end
+  else
+    return val20
+  end
+end
+
+local function createHighlight(val21)
+
+  if val6[val21] then
+    return val6[val21]
+  else
+    local model = val21:IsA("Model")
+
+    if not (model or val21:IsA("BasePart")) then
+      return nil
+    else
+      local element6 = {}
+      element6.luck = helper4(val21)
+
+      if val.DRAW_HIGHLIGHT then
+        local nemoHubHL = Instance.new("Highlight")
+        nemoHubHL.Name = "NemoHub_HL"
+        nemoHubHL.FillColor = val.HIGHLIGHT_COLOR
+        nemoHubHL.OutlineColor = val.HIGHLIGHT_COLOR
+        nemoHubHL.FillTransparency = 0.5
+        nemoHubHL.OutlineTransparency = 0
+        nemoHubHL.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        nemoHubHL.Adornee = helper5(val21)
+        nemoHubHL.Enabled = false
+        nemoHubHL.Parent = coreGui
+
+        element6.highlight = nemoHubHL
+      end
+
+      local drawNAME = val.DRAW_NAME
+      local drawDISTANCE = drawNAME
+
+      if not drawNAME then
+
+        drawDISTANCE = val.DRAW_DISTANCE or val.DRAW_LUCK
+      end
+
+      if drawDISTANCE then
+        local nemoHubBB = Instance.new("BillboardGui")
+        nemoHubBB.Name = "NemoHub_BB"
+        nemoHubBB.Size = UDim2.new(0, 280, 0, 55)
+        nemoHubBB.StudsOffset = Vector3.new(0, 3, 0)
+        nemoHubBB.AlwaysOnTop = true
+        nemoHubBB.LightInfluence = 0
+        nemoHubBB.MaxDistance = val.MAX_DISTANCE
+        nemoHubBB.Enabled = false
+
+        local textLabel = Instance.new("TextLabel")
+        textLabel.BackgroundTransparency = 1
+        textLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        textLabel.Position = UDim2.new(0, 0, 0, 0)
+        textLabel.Font = Enum.Font.GothamBold
+        textLabel.TextColor3 = val.NAME_COLOR
+        textLabel.TextStrokeTransparency = 0
+        textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        textLabel.TextSize = 14
+        textLabel.Text = val21.Name
+        textLabel.Parent = nemoHubBB
+
+        if val.DRAW_LUCK then
+          local textLabel2 = Instance.new("TextLabel")
+          textLabel2.BackgroundTransparency = 1
+          textLabel2.Size = UDim2.new(1, 0, 0.5, 0)
+          textLabel2.Position = UDim2.new(0, 0, 0.5, 0)
+          textLabel2.Font = Enum.Font.GothamBold
+          textLabel2.TextColor3 = val.LUCK_COLOR
+          textLabel2.TextStrokeTransparency = 0
+          textLabel2.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+          textLabel2.TextSize = 13
+          textLabel2.Text = "â¦ " .. (helper(element6.luck))
+          textLabel2.Parent = nemoHubBB
+
+          element6.luckLabel = textLabel2
+        end
+
+        nemoHubBB.Adornee = helper5(val21)
+        nemoHubBB.Parent = coreGui
+
+        element6.billboard = nemoHubBB
+        element6.label = textLabel
+      end
+
+      val6[val21] = element6
+      return element6
+    end
+  end
+end
+
+local val22
+
+local function helper6()
+
+  if connect then
+    return
+  else
+
+    connect = runService.Stepped:Connect(function()
+
+      local val23 = noclipPERSISTENT or val22
+
+      if not val23 then
+        return
+      else
+        local character2 = localPlayer.Character
+
+        if character2 then
+          iterate4(character2)
+        end
+
+        return
+      end
+    end)
+
+    return
+  end
+end
+
+local function safeCall4()
+
+  if val22 and val22.conn then
+    pcall(function()
+
+      val22.conn:Disconnect()
+      return
+    end)
+  end
+
+  local humanoid
+
+  if val22 then
+    humanoid = val22.humanoid
+
+    if humanoid then
+      pcall(function()
+        humanoid.PlatformStand = val22.oldPlatform or false
+        return
+      end)
+
+      pcall(function()
+        humanoid.WalkSpeed = val22.oldSpeed or 16
+        return
+      end)
+
+      pcall(function()
+        humanoid.JumpPower = val22.oldJump or 50
+        return
+      end)
+    end
+  end
+
+  val22 = nil
+
+  if not noclipPERSISTENT then
+    iterate()
+    safeCall3()
+  end
+
+  return
+end
+
+localPlayer.CharacterAdded:Connect(function(p10)
+  task.wait(0.4)
+
+  if noclipPERSISTENT or val22 then
+    iterate4(p10)
+    helper6()
+  end
+
+  return
+end)
+
+local val24
+
+local function iterate5(val25)
+
+  for index5, value6 in ipairs(val.PLOT_OWNER_PATHS) do
+    local findFirstChild = val25
+    local val26 = true
+
+    for index6, value7 in ipairs(value6) do
+      if not findFirstChild then
+        val26 = false
+        break
+      else
+        findFirstChild = findFirstChild:FindFirstChild(value7)
+      end
+    end
+
+    if val26 and findFirstChild then
+      local val27 = val24(findFirstChild)
+
+      if val27 and val27 ~= "" then
+        return val27
+      else
+        ::L13192364::
+      end
+    else
+      goto L13192364
+    end
+  end
+
+  return nil
+end
+
+local function iterate6(val28)
+
+  if not val28 then
+    return nil
+  else
+    for index7, value8 in ipairs(val.PLOT_SPAWN_NAMES) do
+      local findFirstChild2 = val28:FindFirstChild(value8, true)
+
+      if findFirstChild2 and findFirstChild2:IsA("BasePart") then
+        return findFirstChild2.Position + (Vector3.new(0, val.PLOT_TELEPORT_HEIGHT, 0))
+      end
+    end
+
+    local val29, element7, success3
+
+    val29, element7, success3 = pcall(function()
+      local val30, val31 = val28:GetBoundingBox()
+      return val30, val31
+    end)
+
+    if val29 and element7 then
+      return element7.Position + (Vector3.new(0, success3.Y / 2 + val.PLOT_TELEPORT_HEIGHT, 0))
+    else
+      return nil
+    end
+  end
+end
+
+val24 = function(p13)
+
+  if not p13 then
+    return nil
+  else
+    local success4, val32
+    val32, success4 = pcall(function() return p13.Value end)
+
+    if val32 and success4 ~= nil then
+      if (typeof(success4)) == "Instance" then
+        return success4.Name
+      else
+        return tostring(success4)
+      end
+    else
+      return nil
+    end
+  end
+end
+
+local function iterate7()
+  local findFirstChild3 = workspace:FindFirstChild(val.PLOTS_FOLDER)
+
+  if not findFirstChild3 then
+    return nil
+  else
+
+    local lower = localPlayer.Name:lower()
+
+    for index8, value9 in ipairs(findFirstChild3:GetChildren()) do
+      local object = iterate5(value9)
+
+      if object and (object:lower()) == lower then
+        return value9
+      end
+    end
+
+    return nil
+  end
+end
+
+local val33
+
+local function helper7(p14, val34, val35)
+
+  if not val.AUTO_PLOT_TELEPORT then
+    return
+  else
+    if val22 then
+      return
+    else
+      if (tick()) - val10 < val.PLOT_COOLDOWN then
+        return
+      else
+        local val36 = iterate7()
+
+        if not val36 then
+          if val35 then
+            val35(false)
+          end
+
+          return
+        else
+          local val37 = iterate6(val36)
+
+          if not val37 then
+            if val35 then
+              val35(false)
+            end
+
+            return
+          else
+            val10 = tick()
+
+            val33(val37, val34 or val.TWEEN_DURATION, val35)
+            return
+          end
+        end
+      end
+    end
+  end
+end
+
+val33 = function(p17, p18, p19)
+  local tweenDURATION = p18
+  safeCall4()
+  local character3 = localPlayer.Character
+
+  local humanoidRootPart = character3 and character3:FindFirstChild("HumanoidRootPart")
+  local humanoid2, position, val38
+
+  if not humanoidRootPart then
+    if p19 then
+      p19(false)
+    end
+
+    return
+  else
+
+    tweenDURATION = tweenDURATION or val.TWEEN_DURATION
+
+    if val.NOCLIP_DURING_TWEEN then
+      iterate4(character3)
+      helper6()
+    end
+
+    local jumpPower = nil
+    local walkSpeed = nil
+    humanoid2 = character3:FindFirstChildOfClass("Humanoid")
+    local platformStand = nil
+
+    if humanoid2 then
+      platformStand = humanoid2.PlatformStand
+      walkSpeed = humanoid2.WalkSpeed
+      jumpPower = humanoid2.JumpPower
+
+      pcall(function()
+        humanoid2.PlatformStand = true
+        return
+      end)
+
+      pcall(function()
+        humanoid2.WalkSpeed = 0
+        return
+      end)
+
+      pcall(function()
+        humanoid2.JumpPower = 0
+        return
+      end)
+    end
+
+    position = humanoidRootPart.Position
+    val38 = tick()
+
+    val22 = {
+      humanoid = humanoid2, oldPlatform = platformStand, oldSpeed = walkSpeed, oldJump = jumpPower, conn = nil, }
+
+    val22.conn = runService.RenderStepped:Connect(function()
+
+      if not val22 then
+        return
+      else
+        local character4 = localPlayer.Character
+
+        local humanoidRootPart2 = character4 and character4:FindFirstChild("HumanoidRootPart")
+
+        if not humanoidRootPart2 then
+          safeCall4()
+
+          if p19 then
+            p19(false)
+          end
+
+          return
+        else
+          local val39 = tick()
+          local val40 = math.clamp((val39 - val38) / tweenDURATION, 0, 1)
+          local lerp = position:Lerp(p17, val40 * val40 * (3 - 2 * val40))
+
+          humanoidRootPart2.CFrame = CFrame.new(lerp)
+          humanoidRootPart2.Velocity = Vector3.new(0, 0, 0)
+          humanoidRootPart2.RotVelocity = Vector3.new(0, 0, 0)
+
+          if val40 >= 1 or (lerp - p17).Magnitude < val.TWEEN_ARRIVE_DIST then
+            humanoidRootPart2.CFrame = CFrame.new(p17)
+            humanoidRootPart2.Velocity = Vector3.new(0, 0, 0)
+
+            humanoid3 = val22 and val22.humanoid
+
+            oldPlatform = val22 and val22.oldPlatform
+
+            oldSpeed = val22 and val22.oldSpeed
+
+            oldJump = val22 and val22.oldJump
+
+            if val22 and val22.conn then
+              pcall(function()
+
+                val22.conn:Disconnect()
+                return
+              end)
+            end
+
+            val22 = nil
+
+            if humanoid3 then
+              pcall(function()
+                humanoid3.PlatformStand = oldPlatform or false
+                return
+              end)
+
+              pcall(function()
+                humanoid3.WalkSpeed = oldSpeed or 16
+                return
+              end)
+
+              pcall(function()
+                humanoid3.JumpPower = oldJump or 50
+                return
+              end)
+            end
+
+            if not noclipPERSISTENT then
+              iterate()
+              safeCall3()
+            end
+
+            if p19 then
+              p19(true)
+            end
+          end
+
+          return
+        end
+      end
+    end)
+
+    return
+  end
+end
+
+local function waitLoop()
+
+  if val16 then
+    return
+  else
+    val16 = true
+    updateAutofarmBtn()
+    print("[NemoHub] autofarm START")
+
+    while val22 do
+      task.wait(0.2)
+    end
+
+    local val41 = 0
+
+    while val16 do
+      if (next(val6)) == nil then
+        val41 = val41 + 1
+
+        if val41 == 1 then
+          showToast("No eggs available", "waiting...", Color3.fromRGB(255, 180, 80))
+        end
+
+        if val41 > 5 then
+          print("[NemoHub] autofarm â no eggs for 10s, stopping")
+          break
+        else
+          task.wait(2)
+          rescan()
+          ::L15177649::
+        end
+      else
+        local val42, element8
+        element8, val42 = iterate2()
+        val41 = 0
+
+        if not element8 then
+          task.wait(1)
+        else
+          local val43 = safeCall(element8)
+
+          if val43 then
+            print(string.format("[NemoHub] â %s (luck=%s)", element8.Name, helper(val42)))
+            local val44 = false
+
+            val33(val43 + (Vector3.new(0, 2, 0)), val.AUTOFARM_EGG_DURATION, function()
+              val44 = true
+              return
+            end)
+
+            while true do
+
+              if not val44 and val16 then
+                task.wait(0.05)
+              else
+                break
+              end
+            end
+
+            if val.AUTOFARM_FIRE_PROMPT then
+              task.wait(val.AUTOFARM_PROMPT_WAIT)
+              iterate3(element8)
+            end
+
+            local val45 = 0
+
+            while true do
+              local parent = element8.Parent
+              local val46 = parent
+
+              if parent then
+
+                val46 = val45 < val.AUTOFARM_COLLECT_WAIT and val16
+              end
+
+              if val46 then
+                task.wait(0.15)
+                val45 = val45 + 0.15
+
+                if val.AUTOFARM_FIRE_PROMPT then
+                  iterate3(element8)
+                end
+              else
+                break
+              end
+            end
+
+            if element8.Parent then
+              print("[NemoHub] egg didn't collect â skipping")
+            else
+              print("[NemoHub] collected " .. element8.Name)
+              showToast("Collected!", element8.Name, Color3.fromRGB(90, 220, 120))
+            end
+
+            task.wait(val.AUTOFARM_HOP_DELAY)
+
+            if val.AUTOFARM_RETURN_TO_PLOT and val16 then
+              local val47 = false
+
+              helper7("autofarm", val.AUTOFARM_PLOT_DURATION, function()
+                val47 = true
+                return
+              end)
+
+              while true do
+
+                if not val47 and val16 then
+                  task.wait(0.05)
+                else
+                  break
+                end
+              end
+
+              local val48 = (tick()) + val.AUTOFARM_PLOT_SETTLE
+
+              while true do
+
+                if (tick()) < val48 and val16 then
+                  task.wait(0.2)
+                else
+                  break
+                end
+              end
+            end
+          end
+        end
+
+        goto L15177649
+      end
+    end
+
+    val16 = false
+    updateAutofarmBtn()
+    print("[NemoHub] autofarm STOPPED")
+    return
+  end
+end
+
+function startAutofarm()
+  if val16 then
+    return
+  else
+    task.spawn(waitLoop)
+    return
+  end
+end
+
+local nemoHubToasts, val49, val50
+
+local function createFrame()
+  if val50 then
+    return
+  else
+    val50 = true
+
+    task.spawn(function()
+      while #val49 > 0 do
+        local element9 = table.remove(val49, 1)
+
+        local frame = Instance.new("Frame")
+        frame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+        frame.BorderSizePixel = 0
+        frame.Position = UDim2.new(1, 260, 1, -80)
+        frame.Size = UDim2.new(0, 240, 0, 60)
+
+        local uiCorner = Instance.new("UICorner")
+        uiCorner.CornerRadius = UDim.new(0, 8)
+        uiCorner.Parent = frame
+
+        local uiStroke = Instance.new("UIStroke")
+        uiStroke.Color = element9.color
+        uiStroke.Thickness = 1
+        uiStroke.Transparency = 0.3
+        uiStroke.Parent = frame
+
+        local frame2 = Instance.new("Frame")
+        frame2.Parent = frame
+        frame2.BackgroundColor3 = element9.color
+        frame2.BorderSizePixel = 0
+        frame2.Position = UDim2.new(0, 0, 0, 0)
+        frame2.Size = UDim2.new(0, 4, 1, 0)
+
+        local uiCorner2 = Instance.new("UICorner")
+        uiCorner2.CornerRadius = UDim.new(0, 8)
+        uiCorner2.Parent = frame2
+
+        local textLabel3 = Instance.new("TextLabel")
+        textLabel3.Parent = frame
+        textLabel3.BackgroundTransparency = 1
+        textLabel3.Position = UDim2.new(0, 14, 0, 8)
+        textLabel3.Size = UDim2.new(1, -20, 0, 18)
+        textLabel3.Font = Enum.Font.GothamBold
+        textLabel3.Text = element9.title
+        textLabel3.TextColor3 = element9.color
+        textLabel3.TextSize = 13
+        textLabel3.TextXAlignment = Enum.TextXAlignment.Left
+
+        local textLabel4 = Instance.new("TextLabel")
+        textLabel4.Parent = frame
+        textLabel4.BackgroundTransparency = 1
+        textLabel4.Position = UDim2.new(0, 14, 0, 26)
+        textLabel4.Size = UDim2.new(1, -20, 0, 26)
+        textLabel4.Font = Enum.Font.Gotham
+        textLabel4.Text = element9.body
+        textLabel4.TextColor3 = Color3.fromRGB(220, 220, 230)
+        textLabel4.TextSize = 11
+        textLabel4.TextXAlignment = Enum.TextXAlignment.Left
+        textLabel4.TextWrapped = true
+
+        frame.Parent = nemoHubToasts
+
+        frame:TweenPosition(
+          UDim2.new(1, -260, 1, -80), Enum.EasingDirection.Out, Enum.EasingStyle.Quint, 0.35, true
+        )
+
+        task.wait(3)
+
+        frame:TweenPosition(
+          UDim2.new(1, 20, 1, -80), Enum.EasingDirection.In, Enum.EasingStyle.Quint, 0.35, true
+        )
+
+        task.wait(0.4)
+
+        pcall(function()
+          frame:Destroy()
+          return
+        end)
+      end
+
+      val50 = false
+      return
+    end)
+
+    return
+  end
+end
+
+stopAutofarm = function()
+  val16 = false
+  safeCall4()
+  updateAutofarmBtn()
+  return
+end
+
+local object2
+
+local function iterate8()
+  object2 = helper2()
+
+  if not object2 then
+    return
+  else
+    local val51 = {}
+
+    for index9, value10 in ipairs(object2:GetChildren()) do
+      val51[value10] = true
+
+      if not val6[value10] then
+        createHighlight(value10)
+      end
+    end
+
+    for key2 in pairs(val6) do
+      if not val51[key2] then
+        val9[key2.Name] = true
+        count = count + 1
+        safeCall2(key2)
+      end
+    end
+
+    return
+  end
+end
+
+val49 = {}
+val50 = false
+
+function showToast(val52, val53, val54)
+
+  table.insert(val49, { title = val52, body = val53, color = val54 or Color3.fromRGB(90, 220, 120) })
+  createFrame()
+  return
+end
+
+local element10 = {
+  bg = (Color3.fromRGB(14, 14, 20)), sidebar = (Color3.fromRGB(18, 18, 26)), panel = (Color3.fromRGB(24, 24, 32)), panelLight = (Color3.fromRGB(34, 34, 44)), accent = (Color3.fromRGB(120, 200, 160)), accentDim = (Color3.fromRGB(40, 80, 60)), gold = (Color3.fromRGB(255, 215, 0)), green = (Color3.fromRGB(90, 220, 120)), greenDim = (Color3.fromRGB(30, 70, 40)), red = (Color3.fromRGB(255, 100, 100)), redDim = (Color3.fromRGB(70, 30, 30)), text = (Color3.fromRGB(230, 230, 240)), textDim = (Color3.fromRGB(140, 140, 160)), pink = (Color3.fromRGB(255, 120, 220)), }
+
+local val55 = "home"
+local val56 = {}
+local val57 = {}
+
+local function createFrame2(parent2, val58, val59, val60, val61)
+  local frame3 = Instance.new("Frame")
+  frame3.Parent = parent2
+  frame3.BackgroundColor3 = element10.panelLight
+  frame3.BorderSizePixel = 0
+  frame3.Position = val58
+  frame3.Size = val59
+
+  local uiCorner3 = Instance.new("UICorner")
+  uiCorner3.CornerRadius = UDim.new(0, 8)
+  uiCorner3.Parent = frame3
+
+  local frame4 = Instance.new("Frame")
+  frame4.Parent = frame3
+  frame4.BackgroundColor3 = val61
+  frame4.BorderSizePixel = 0
+  frame4.Position = UDim2.new(0, 0, 0, 6)
+  frame4.Size = UDim2.new(0, 3, 1, -12)
+
+  local uiCorner4 = Instance.new("UICorner")
+  uiCorner4.CornerRadius = UDim.new(0, 2)
+  uiCorner4.Parent = frame4
+
+  local textLabel5 = Instance.new("TextLabel")
+  textLabel5.Parent = frame3
+  textLabel5.BackgroundTransparency = 1
+  textLabel5.Position = UDim2.new(0, 12, 0, 8)
+  textLabel5.Size = UDim2.new(1, -20, 0, 14)
+  textLabel5.Font = Enum.Font.GothamSemibold
+  textLabel5.Text = val60
+  textLabel5.TextColor3 = element10.textDim
+  textLabel5.TextSize = 10
+  textLabel5.TextXAlignment = Enum.TextXAlignment.Left
+
+  local textLabel6 = Instance.new("TextLabel")
+  textLabel6.Parent = frame3
+  textLabel6.BackgroundTransparency = 1
+  textLabel6.Position = UDim2.new(0, 12, 0, 24)
+  textLabel6.Size = UDim2.new(1, -20, 1, -28)
+  textLabel6.Font = Enum.Font.GothamBold
+  textLabel6.Text = "..."
+  textLabel6.TextColor3 = element10.text
+  textLabel6.TextSize = 15
+  textLabel6.TextXAlignment = Enum.TextXAlignment.Left
+
+  return textLabel6
+end
+
+local function createTextButton(val67, val62, val63, val64, val65, val66, val68)
+  local textButton = Instance.new("TextButton")
+
+  textButton.Parent = val67
+  textButton.BackgroundColor3 = val65
+  textButton.BorderSizePixel = 0
+  textButton.Position = val62
+  textButton.Size = val63
+  textButton.Font = Enum.Font.GothamBold
+  textButton.Text = val64
+  textButton.TextColor3 = val66
+  textButton.TextSize = 12
+  textButton.AutoButtonColor = false
+
+  local uiCorner5 = Instance.new("UICorner")
+  uiCorner5.CornerRadius = UDim.new(0, 6)
+  uiCorner5.Parent = textButton
+
+  textButton.MouseEnter:Connect(function()
+    textButton.BackgroundColor3 = Color3.fromRGB(
+      math.min(255, val65.R * 255 + 20), math.min(255, val65.G * 255 + 20), math.min(255, val65.B * 255 + 20)
+    )
+
+    return
+  end)
+
+  textButton.MouseLeave:Connect(function()
+    textButton.BackgroundColor3 = val65
+    return
+  end)
+
+  textButton.MouseButton1Click:Connect(val68)
+  return textButton
+end
+
+local main, sidebar, content, textButton2, val69, val70, udim2, val71, val72, udim22, scrollingFrame, scrollingFrame2, val73
+
+local function createScreenGui()
+  local nemoHub = Instance.new("ScreenGui")
+
+  nemoHub.Name = "NemoHub"
+  nemoHub.ResetOnSpawn = false
+  nemoHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+  nemoHub.Parent = coreGui
+
+  nemoHubToasts = Instance.new("ScreenGui")
+  nemoHubToasts.Name = "NemoHub_Toasts"
+  nemoHubToasts.ResetOnSpawn = false
+  nemoHubToasts.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+  nemoHubToasts.Parent = coreGui
+
+  main = Instance.new("Frame")
+  main.Name = "Main"
+  main.Parent = nemoHub
+  main.BackgroundColor3 = element10.bg
+  main.BorderSizePixel = 0
+  main.Position = UDim2.new(0.5, -380, 0.5, -260)
+  main.Size = UDim2.new(0, 760, 0, 520)
+  main.Active = true
+  main.Draggable = true
+  main.ClipsDescendants = true
+
+  local uiCorner6 = Instance.new("UICorner")
+  uiCorner6.CornerRadius = UDim.new(0, 14)
+  uiCorner6.Parent = main
+
+  local uiStroke2 = Instance.new("UIStroke")
+  uiStroke2.Color = element10.accent
+  uiStroke2.Thickness = 1
+  uiStroke2.Transparency = 0.4
+  uiStroke2.Parent = main
+
+  sidebar = Instance.new("Frame")
+  sidebar.Name = "Sidebar"
+  sidebar.Parent = main
+  sidebar.BackgroundColor3 = element10.sidebar
+  sidebar.BorderSizePixel = 0
+  sidebar.Position = UDim2.new(0, 0, 0, 0)
+  sidebar.Size = UDim2.new(0, 170, 1, 0)
+
+  local uiCorner7 = Instance.new("UICorner")
+  uiCorner7.CornerRadius = UDim.new(0, 14)
+  uiCorner7.Parent = sidebar
+
+  local frame5 = Instance.new("Frame")
+  frame5.Parent = sidebar
+  frame5.BackgroundColor3 = element10.sidebar
+  frame5.BorderSizePixel = 0
+  frame5.Position = UDim2.new(0.5, 0, 0, 0)
+  frame5.Size = UDim2.new(0.5, 0, 1, 0)
+
+  local textLabel7 = Instance.new("TextLabel")
+  textLabel7.Parent = sidebar
+  textLabel7.BackgroundTransparency = 1
+  textLabel7.Position = UDim2.new(0, 16, 0, 22)
+  textLabel7.Size = UDim2.new(1, -20, 0, 30)
+  textLabel7.Font = Enum.Font.GothamBold
+  textLabel7.Text = "NemoHub"
+  textLabel7.TextColor3 = element10.accent
+  textLabel7.TextSize = 22
+  textLabel7.TextXAlignment = Enum.TextXAlignment.Left
+
+  local frame6 = Instance.new("Frame")
+  frame6.Parent = sidebar
+  frame6.BackgroundColor3 = element10.panelLight
+  frame6.BorderSizePixel = 0
+  frame6.Position = UDim2.new(0, 16, 0, 62)
+  frame6.Size = UDim2.new(1, -32, 0, 1)
+
+  for index10, value11 in ipairs({
+    { id = "home", icon = "â", label = "Home" }, { id = "eggs", icon = "â", label = "Eggs" }, { id = "esp", icon = "â", label = "ESP" }, { id = "about", icon = "â¹", label = "About" }, }) do
+    local element11 = value11
+
+    local textButton3 = Instance.new("TextButton")
+    textButton3.Parent = sidebar
+    textButton3.BackgroundColor3 = element10.sidebar
+    textButton3.BackgroundTransparency = 1
+    textButton3.BorderSizePixel = 0
+    textButton3.Position = UDim2.new(0, 12, 0, 78 + (index10 - 1) * 42)
+    textButton3.Size = UDim2.new(1, -24, 0, 36)
+    textButton3.Font = Enum.Font.GothamSemibold
+    textButton3.Text = "   " .. element11.icon .. "    " .. element11.label
+    textButton3.TextColor3 = element10.textDim
+    textButton3.TextSize = 13
+    textButton3.TextXAlignment = Enum.TextXAlignment.Left
+    textButton3.AutoButtonColor = false
+
+    local uiCorner8 = Instance.new("UICorner")
+    uiCorner8.CornerRadius = UDim.new(0, 8)
+    uiCorner8.Parent = textButton3
+
+    textButton3.MouseEnter:Connect(function()
+      if val55 ~= element11.id then
+        textButton3.BackgroundTransparency = 0.6
+        textButton3.BackgroundColor3 = element10.panelLight
+      end
+
+      return
+    end)
+
+    textButton3.MouseLeave:Connect(function()
+      if val55 ~= element11.id then
+        textButton3.BackgroundTransparency = 1
+      end
+
+      return
+    end)
+
+    textButton3.MouseButton1Click:Connect(function()
+      switchPage(element11.id)
+      return
+    end)
+
+    val56[element11.id] = textButton3
+  end
+
+  local textLabel8 = Instance.new("TextLabel")
+  textLabel8.Parent = sidebar
+  textLabel8.BackgroundTransparency = 1
+  textLabel8.Position = UDim2.new(0, 16, 1, -30)
+  textLabel8.Size = UDim2.new(1, -20, 0, 20)
+  textLabel8.Font = Enum.Font.Gotham
+  textLabel8.Text = "v1.0 Â· NemoHub"
+  textLabel8.TextColor3 = element10.textDim
+  textLabel8.TextSize = 10
+  textLabel8.TextXAlignment = Enum.TextXAlignment.Left
+
+  content = Instance.new("Frame")
+  content.Name = "Content"
+  content.Parent = main
+  content.BackgroundTransparency = 1
+  content.Position = UDim2.new(0, 170, 0, 0)
+  content.Size = UDim2.new(1, -170, 1, 0)
+
+  local frame7 = Instance.new("Frame")
+  frame7.Parent = content
+  frame7.BackgroundTransparency = 1
+  frame7.Position = UDim2.new(0, 0, 0, 0)
+  frame7.Size = UDim2.new(1, 0, 0, 60)
+
+  local frame8 = Instance.new("Frame")
+  frame8.Parent = frame7
+  frame8.BackgroundColor3 = element10.panel
+  frame8.BorderSizePixel = 0
+  frame8.Position = UDim2.new(0, 16, 0, 14)
+  frame8.Size = UDim2.new(1, -80, 0, 32)
+
+  local uiCorner9 = Instance.new("UICorner")
+  uiCorner9.CornerRadius = UDim.new(0, 8)
+  uiCorner9.Parent = frame8
+
+  local textLabel9 = Instance.new("TextLabel")
+  textLabel9.Parent = frame8
+  textLabel9.BackgroundTransparency = 1
+  textLabel9.Position = UDim2.new(0, 10, 0, 0)
+  textLabel9.Size = UDim2.new(0, 20, 1, 0)
+  textLabel9.Font = Enum.Font.Gotham
+  textLabel9.Text = "ð"
+  textLabel9.TextColor3 = element10.textDim
+  textLabel9.TextSize = 14
+  textLabel9.TextXAlignment = Enum.TextXAlignment.Left
+
+  local textLabel10 = Instance.new("TextLabel")
+  textLabel10.Parent = frame8
+  textLabel10.BackgroundTransparency = 1
+  textLabel10.Position = UDim2.new(0, 36, 0, 0)
+  textLabel10.Size = UDim2.new(1, -40, 1, 0)
+  textLabel10.Font = Enum.Font.Gotham
+  textLabel10.Text = "NemoHub Â· egg farmer"
+  textLabel10.TextColor3 = element10.textDim
+  textLabel10.TextSize = 12
+  textLabel10.TextXAlignment = Enum.TextXAlignment.Left
+
+  local textButton4 = Instance.new("TextButton")
+  textButton4.Parent = frame7
+  textButton4.BackgroundTransparency = 1
+  textButton4.Position = UDim2.new(1, -50, 0, 14)
+  textButton4.Size = UDim2.new(0, 32, 0, 32)
+  textButton4.Font = Enum.Font.GothamBold
+  textButton4.Text = "Ã"
+  textButton4.TextColor3 = element10.red
+  textButton4.TextSize = 24
+  textButton4.AutoButtonColor = false
+
+  textButton4.MouseButton1Click:Connect(function()
+    main.Visible = false
+    textButton2.Visible = true
+    return
+  end)
+
+  val57.home = Instance.new("Frame")
+  val57.home.Parent = content
+  val57.home.BackgroundTransparency = 1
+  val57.home.Position = UDim2.new(0, 16, 0, 60)
+  val57.home.Size = UDim2.new(1, -32, 1, -76)
+
+  local frame9 = Instance.new("Frame")
+  frame9.Parent = val57.home
+  frame9.BackgroundTransparency = 1
+  frame9.Position = UDim2.new(0, 0, 0, 0)
+  frame9.Size = UDim2.new(0.5, -8, 1, 0)
+
+  local frame10 = Instance.new("Frame")
+  frame10.Parent = frame9
+  frame10.BackgroundColor3 = element10.panel
+  frame10.BorderSizePixel = 0
+  frame10.Position = UDim2.new(0, 0, 0, 0)
+  frame10.Size = UDim2.new(1, 0, 1, 0)
+
+  local uiCorner10 = Instance.new("UICorner")
+  uiCorner10.CornerRadius = UDim.new(0, 10)
+  uiCorner10.Parent = frame10
+
+  local uiStroke3 = Instance.new("UIStroke")
+  uiStroke3.Color = element10.panelLight
+  uiStroke3.Thickness = 1
+  uiStroke3.Parent = frame10
+
+  local textLabel11 = Instance.new("TextLabel")
+  textLabel11.Parent = frame10
+  textLabel11.BackgroundTransparency = 1
+  textLabel11.Position = UDim2.new(0, 16, 0, 14)
+  textLabel11.Size = UDim2.new(1, -32, 0, 20)
+  textLabel11.Font = Enum.Font.GothamBold
+  textLabel11.Text = "â Session"
+  textLabel11.TextColor3 = element10.text
+  textLabel11.TextSize = 13
+  textLabel11.TextXAlignment = Enum.TextXAlignment.Left
+
+  val71 = createFrame2(
+    frame10, UDim2.new(0, 16, 0, 48), UDim2.new(0.5, -24, 0, 64), "STATUS", element10.accent
+  )
+
+  val69 = createFrame2(
+    frame10, UDim2.new(0.5, 8, 0, 48), UDim2.new(0.5, -24, 0, 64), "EGGS REMAINING", element10.gold
+  )
+
+  val70 = createFrame2(
+    frame10, UDim2.new(0, 16, 0, 120), UDim2.new(0.5, -24, 0, 64), "EGGS COLLECTED", element10.green
+  )
+
+  val72 = createFrame2(
+    frame10, UDim2.new(0.5, 8, 0, 120), UDim2.new(0.5, -24, 0, 64), "TOP LUCK", element10.pink
+  )
+
+  udim2 = createFrame2(frame10, UDim2.new(0, 16, 0, 192), UDim2.new(0.5, -24, 0, 64), "FPS", element10.textDim)
+  createFrame2(frame10, UDim2.new(0.5, 8, 0, 192), UDim2.new(0.5, -24, 0, 64), "NEXT EGG", element10.textDim)
+
+  local frame11 = Instance.new("Frame")
+  frame11.Parent = val57.home
+  frame11.BackgroundTransparency = 1
+  frame11.Position = UDim2.new(0.5, 8, 0, 0)
+  frame11.Size = UDim2.new(0.5, -8, 1, 0)
+
+  local frame12 = Instance.new("Frame")
+  frame12.Parent = frame11
+  frame12.BackgroundColor3 = element10.panel
+  frame12.BorderSizePixel = 0
+  frame12.Position = UDim2.new(0, 0, 0, 0)
+  frame12.Size = UDim2.new(1, 0, 0, 260)
+
+  local uiCorner11 = Instance.new("UICorner")
+  uiCorner11.CornerRadius = UDim.new(0, 10)
+  uiCorner11.Parent = frame12
+
+  local uiStroke4 = Instance.new("UIStroke")
+  uiStroke4.Color = element10.panelLight
+  uiStroke4.Thickness = 1
+  uiStroke4.Parent = frame12
+
+  local textLabel12 = Instance.new("TextLabel")
+  textLabel12.Parent = frame12
+  textLabel12.BackgroundTransparency = 1
+  textLabel12.Position = UDim2.new(0, 16, 0, 14)
+  textLabel12.Size = UDim2.new(1, -32, 0, 20)
+  textLabel12.Font = Enum.Font.GothamBold
+  textLabel12.Text = "â¤ Live Stats"
+  textLabel12.TextColor3 = element10.text
+  textLabel12.TextSize = 13
+  textLabel12.TextXAlignment = Enum.TextXAlignment.Left
+
+  local function createFrame3(val75, val74, val76)
+    local frame13 = Instance.new("Frame")
+    frame13.Parent = frame12
+    frame13.BackgroundColor3 = element10.panelLight
+    frame13.BorderSizePixel = 0
+    frame13.Position = UDim2.new(0, 16, 0, val75)
+    frame13.Size = UDim2.new(1, -32, 0, 30)
+
+    local uiCorner12 = Instance.new("UICorner")
+    uiCorner12.CornerRadius = UDim.new(0, 6)
+    uiCorner12.Parent = frame13
+
+    local textLabel13 = Instance.new("TextLabel")
+    textLabel13.Parent = frame13
+    textLabel13.BackgroundTransparency = 1
+    textLabel13.Position = UDim2.new(0, 10, 0, 0)
+    textLabel13.Size = UDim2.new(0, 20, 1, 0)
+    textLabel13.Font = Enum.Font.Gotham
+    textLabel13.Text = val74
+    textLabel13.TextColor3 = element10.accent
+    textLabel13.TextSize = 13
+    textLabel13.TextXAlignment = Enum.TextXAlignment.Left
+
+    local textLabel14 = Instance.new("TextLabel")
+    textLabel14.Parent = frame13
+    textLabel14.BackgroundTransparency = 1
+    textLabel14.Position = UDim2.new(0, 34, 0, 0)
+    textLabel14.Size = UDim2.new(0.5, 0, 1, 0)
+    textLabel14.Font = Enum.Font.Gotham
+    textLabel14.Text = val76
+    textLabel14.TextColor3 = element10.textDim
+    textLabel14.TextSize = 11
+    textLabel14.TextXAlignment = Enum.TextXAlignment.Left
+
+    local textLabel15 = Instance.new("TextLabel")
+    textLabel15.Parent = frame13
+    textLabel15.BackgroundTransparency = 1
+    textLabel15.Position = UDim2.new(0.5, 0, 0, 0)
+    textLabel15.Size = UDim2.new(0.5, -10, 1, 0)
+    textLabel15.Font = Enum.Font.GothamBold
+    textLabel15.Text = "..."
+    textLabel15.TextColor3 = element10.text
+    textLabel15.TextSize = 12
+    textLabel15.TextXAlignment = Enum.TextXAlignment.Right
+
+    return textLabel15
+  end
+
+  local egg = createFrame3(44, "â", "TOTAL EGGS")
+  local luck3 = createFrame3(80, "â¦", "TOP LUCK")
+  local fps = createFrame3(116, "â¤", "FPS")
+  local ping = createFrame3(152, "â¦", "PING")
+
+  local frame14 = Instance.new("Frame")
+  frame14.Parent = frame11
+  frame14.BackgroundColor3 = element10.panel
+  frame14.BorderSizePixel = 0
+  frame14.Position = UDim2.new(0, 0, 0, 276)
+  frame14.Size = UDim2.new(1, 0, 1, -276)
+
+  local uiCorner13 = Instance.new("UICorner")
+  uiCorner13.CornerRadius = UDim.new(0, 10)
+  uiCorner13.Parent = frame14
+
+  local uiStroke5 = Instance.new("UIStroke")
+  uiStroke5.Color = element10.panelLight
+  uiStroke5.Thickness = 1
+  uiStroke5.Parent = frame14
+
+  local textLabel16 = Instance.new("TextLabel")
+  textLabel16.Parent = frame14
+  textLabel16.BackgroundTransparency = 1
+  textLabel16.Position = UDim2.new(0, 16, 0, 14)
+  textLabel16.Size = UDim2.new(1, -32, 0, 20)
+  textLabel16.Font = Enum.Font.GothamBold
+  textLabel16.Text = "â¡ Controls"
+  textLabel16.TextColor3 = element10.text
+  textLabel16.TextSize = 13
+  textLabel16.TextXAlignment = Enum.TextXAlignment.Left
+
+  udim22 = createTextButton(frame14, UDim2.new(0, 16, 0, 46), UDim2.new(1, -32, 0, 38), "â¶  START AUTOFARM  [M]", element10.greenDim, element10.green, function()
+    if val16 then
+      stopAutofarm()
+    else
+      startAutofarm()
+    end
+
+    return
+  end)
+
+  createTextButton(frame14, UDim2.new(0, 16, 0, 92), UDim2.new(1, -32, 0, 34), "ð   GO TO MY PLOT", element10.panelLight, element10.gold, function()
+    helper7("manual")
+    task.wait(0.1)
+    return
+  end)
+
+  createTextButton(frame14, UDim2.new(0, 16, 0, 134), UDim2.new(1, -32, 0, 34), "â  TOGGLE ESP  [RCTRL]", element10.panelLight, element10.accent, function()
+    local val77 = not val8
+    val8 = val77
+
+    local val78 = "ESP " .. (val8 and "ON" or "OFF")
+
+    showToast(val78, "toggled", val8 and element10.green or element10.red)
+    return
+  end)
+
+  val57.eggs = Instance.new("Frame")
+  val57.eggs.Parent = content
+  val57.eggs.BackgroundTransparency = 1
+  val57.eggs.Position = UDim2.new(0, 16, 0, 60)
+  val57.eggs.Size = UDim2.new(1, -32, 1, -76)
+  val57.eggs.Visible = false
+
+  local textLabel17 = Instance.new("TextLabel")
+  textLabel17.Parent = val57.eggs
+  textLabel17.BackgroundTransparency = 1
+  textLabel17.Position = UDim2.new(0, 0, 0, 0)
+  textLabel17.Size = UDim2.new(1, 0, 0, 24)
+  textLabel17.Font = Enum.Font.GothamBold
+  textLabel17.Text = "â  Egg List (highest luck first)"
+  textLabel17.TextColor3 = element10.text
+  textLabel17.TextSize = 14
+  textLabel17.TextXAlignment = Enum.TextXAlignment.Left
+
+  scrollingFrame = Instance.new("ScrollingFrame")
+  scrollingFrame.Parent = val57.eggs
+  scrollingFrame.BackgroundColor3 = element10.panel
+  scrollingFrame.BorderSizePixel = 0
+  scrollingFrame.Position = UDim2.new(0, 0, 0, 34)
+  scrollingFrame.Size = UDim2.new(1, 0, 1, -34)
+  scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+  scrollingFrame.ScrollBarThickness = 4
+  scrollingFrame.ScrollBarImageColor3 = element10.accent
+
+  local uiCorner14 = Instance.new("UICorner")
+  uiCorner14.CornerRadius = UDim.new(0, 10)
+  uiCorner14.Parent = scrollingFrame
+
+  local uiPadding = Instance.new("UIPadding")
+  uiPadding.PaddingTop = UDim.new(0, 8)
+  uiPadding.PaddingLeft = UDim.new(0, 8)
+  uiPadding.PaddingRight = UDim.new(0, 8)
+  uiPadding.PaddingBottom = UDim.new(0, 8)
+  uiPadding.Parent = scrollingFrame
+
+  local uiListLayout = Instance.new("UIListLayout")
+  uiListLayout.Parent = scrollingFrame
+  uiListLayout.Padding = UDim.new(0, 4)
+  uiListLayout.SortOrder = Enum.SortOrder.Name
+
+  val73 = scrollingFrame
+
+  val57.esp = Instance.new("Frame")
+  val57.esp.Parent = content
+  val57.esp.BackgroundTransparency = 1
+  val57.esp.Position = UDim2.new(0, 16, 0, 60)
+  val57.esp.Size = UDim2.new(1, -32, 1, -76)
+  val57.esp.Visible = false
+
+  local textLabel18 = Instance.new("TextLabel")
+  textLabel18.Parent = val57.esp
+  textLabel18.BackgroundTransparency = 1
+  textLabel18.Position = UDim2.new(0, 0, 0, 0)
+  textLabel18.Size = UDim2.new(1, 0, 0, 24)
+  textLabel18.Font = Enum.Font.GothamBold
+  textLabel18.Text = "â  ESP Settings"
+  textLabel18.TextColor3 = element10.text
+  textLabel18.TextSize = 14
+  textLabel18.TextXAlignment = Enum.TextXAlignment.Left
+
+  scrollingFrame2 = Instance.new("ScrollingFrame")
+  scrollingFrame2.Parent = val57.esp
+  scrollingFrame2.BackgroundColor3 = element10.panel
+  scrollingFrame2.BorderSizePixel = 0
+  scrollingFrame2.Position = UDim2.new(0, 0, 0, 34)
+  scrollingFrame2.Size = UDim2.new(1, 0, 1, -34)
+  scrollingFrame2.CanvasSize = UDim2.new(0, 0, 0, 0)
+  scrollingFrame2.ScrollBarThickness = 4
+  scrollingFrame2.ScrollBarImageColor3 = element10.accent
+
+  local uiCorner15 = Instance.new("UICorner")
+  uiCorner15.CornerRadius = UDim.new(0, 10)
+  uiCorner15.Parent = scrollingFrame2
+
+  local uiPadding2 = Instance.new("UIPadding")
+  uiPadding2.PaddingTop = UDim.new(0, 8)
+  uiPadding2.PaddingLeft = UDim.new(0, 8)
+  uiPadding2.PaddingRight = UDim.new(0, 8)
+  uiPadding2.PaddingBottom = UDim.new(0, 8)
+  uiPadding2.Parent = scrollingFrame2
+
+  local uiListLayout2 = Instance.new("UIListLayout")
+  uiListLayout2.Parent = scrollingFrame2
+  uiListLayout2.Padding = UDim.new(0, 4)
+  uiListLayout2.SortOrder = Enum.SortOrder.Name
+
+  val57.about = Instance.new("Frame")
+  val57.about.Parent = content
+  val57.about.BackgroundTransparency = 1
+  val57.about.Position = UDim2.new(0, 16, 0, 60)
+  val57.about.Size = UDim2.new(1, -32, 1, -76)
+  val57.about.Visible = false
+
+  local frame15 = Instance.new("Frame")
+  frame15.Parent = val57.about
+  frame15.BackgroundColor3 = element10.panel
+  frame15.BorderSizePixel = 0
+  frame15.Size = UDim2.new(1, 0, 1, 0)
+
+  local uiCorner16 = Instance.new("UICorner")
+  uiCorner16.CornerRadius = UDim.new(0, 10)
+  uiCorner16.Parent = frame15
+
+  local textLabel19 = Instance.new("TextLabel")
+  textLabel19.Parent = frame15
+  textLabel19.BackgroundTransparency = 1
+  textLabel19.Position = UDim2.new(0, 30, 0, 30)
+  textLabel19.Size = UDim2.new(1, -60, 1, -60)
+  textLabel19.Font = Enum.Font.Gotham
+  textLabel19.Text = "NemoHub v1.0\n\nEgg ESP + Autofarm for RenderedEggs\n\nControls:\nâ¢ RCTRL â toggle ESP\nâ¢ RSHIFT â toggle panel\nâ¢ M â autofarm on/off\nâ¢ RALT â go to plot\nâ¢ RBRACKET â noclip"
+  textLabel19.TextColor3 = element10.text
+  textLabel19.TextSize = 13
+  textLabel19.TextXAlignment = Enum.TextXAlignment.Left
+  textLabel19.TextYAlignment = Enum.TextYAlignment.Top
+  textLabel19.TextWrapped = true
+
+  textButton2 = Instance.new("TextButton")
+  textButton2.Parent = nemoHub
+  textButton2.BackgroundColor3 = element10.bg
+  textButton2.BorderSizePixel = 0
+  textButton2.Position = UDim2.new(0, 20, 0, 20)
+  textButton2.Size = UDim2.new(0, 120, 0, 34)
+  textButton2.Font = Enum.Font.GothamBold
+  textButton2.Text = "â NemoHub"
+  textButton2.TextColor3 = element10.accent
+  textButton2.TextSize = 12
+  textButton2.Visible = false
+  textButton2.AutoButtonColor = false
+
+  local uiCorner17 = Instance.new("UICorner")
+  uiCorner17.CornerRadius = UDim.new(0, 8)
+  uiCorner17.Parent = textButton2
+
+  local uiStroke6 = Instance.new("UIStroke")
+  uiStroke6.Color = element10.accent
+  uiStroke6.Thickness = 1
+  uiStroke6.Transparency = 0.5
+  uiStroke6.Parent = textButton2
+
+  textButton2.MouseButton1Click:Connect(function()
+    main.Visible = true
+    textButton2.Visible = false
+    return
+  end)
+
+  nemoHub:SetAttribute("liveEgg", "ok")
+
+  _G.__nemoLive = {
+    egg = egg, luck = luck3, fps = fps, ping = ping, }
+
+  return nemoHub
+end
+
+switchPage = function(p37)
+  val55 = p37
+
+  for key3, value12 in pairs(val57) do
+    value12.Visible = key3 == p37
+  end
+
+  for key4, value13 in pairs(val56) do
+    if key4 == p37 then
+      value13.BackgroundTransparency = 0
+      value13.BackgroundColor3 = element10.accentDim
+      value13.TextColor3 = element10.accent
+    else
+      value13.BackgroundTransparency = 1
+      value13.TextColor3 = element10.textDim
+    end
+  end
+
+  if p37 == "esp" then
+    rebuildEspTab()
+  end
+
+  if p37 == "eggs" then
+    rebuildEggList()
+  end
+
+  return
+end
+
+local function createFrame4(val81, val79, val80, val82)
+  local frame16 = Instance.new("Frame")
+
+  frame16.Parent = val81
+  frame16.BackgroundColor3 = element10.panelLight
+  frame16.BorderSizePixel = 0
+  frame16.Size = UDim2.new(1, -4, 0, 44)
+
+  local uiCorner18 = Instance.new("UICorner")
+  uiCorner18.CornerRadius = UDim.new(0, 8)
+  uiCorner18.Parent = frame16
+
+  local textLabel20 = Instance.new("TextLabel")
+  textLabel20.Parent = frame16
+  textLabel20.BackgroundTransparency = 1
+  textLabel20.Position = UDim2.new(0, 16, 0, 0)
+  textLabel20.Size = UDim2.new(1, -100, 1, 0)
+  textLabel20.Font = Enum.Font.GothamSemibold
+  textLabel20.Text = val79
+  textLabel20.TextColor3 = element10.text
+  textLabel20.TextSize = 13
+  textLabel20.TextXAlignment = Enum.TextXAlignment.Left
+
+  local textButton5 = Instance.new("TextButton")
+  textButton5.Parent = frame16
+
+  textButton5.BackgroundColor3 = (val80()) and element10.green or element10.redDim
+  textButton5.BorderSizePixel = 0
+  textButton5.Position = UDim2.new(1, -80, 0.5, -11)
+  textButton5.Size = UDim2.new(0, 60, 0, 22)
+  textButton5.Font = Enum.Font.GothamBold
+
+  textButton5.Text = (val80()) and "ON" or "OFF"
+  textButton5.TextColor3 = Color3.fromRGB(255, 255, 255)
+  textButton5.TextSize = 11
+  textButton5.AutoButtonColor = false
+
+  local uiCorner19 = Instance.new("UICorner")
+  uiCorner19.CornerRadius = UDim.new(0, 11)
+  uiCorner19.Parent = textButton5
+
+  textButton5.MouseButton1Click:Connect(function()
+    local val83 = not (val80())
+    val82(val83)
+
+    textButton5.Text = val83 and "ON" or "OFF"
+
+    textButton5.BackgroundColor3 = val83 and element10.green or element10.redDim
+    return
+  end)
+
+  return frame16
+end
+
+function rebuildEspTab()
+
+  if not scrollingFrame2 then
+    return
+  else
+
+    for index11, value14 in ipairs(scrollingFrame2:GetChildren()) do
+      if (value14:IsA("Frame")) then
+        value14:Destroy()
+      end
+    end
+
+    createFrame4(scrollingFrame2, "ð  Highlight", function() return val.DRAW_HIGHLIGHT end, function(drawHIGHLIGHT)
+      val.DRAW_HIGHLIGHT = drawHIGHLIGHT
+      return
+    end)
+
+    createFrame4(scrollingFrame2, "ð·  Name", function() return val.DRAW_NAME end, function(drawNAME2)
+      val.DRAW_NAME = drawNAME2
+      return
+    end)
+
+    createFrame4(scrollingFrame2, "ð  Distance", function() return val.DRAW_DISTANCE end, function(drawDISTANCE2)
+      val.DRAW_DISTANCE = drawDISTANCE2
+      return
+    end)
+
+    createFrame4(scrollingFrame2, "â¦  Luck", function() return val.DRAW_LUCK end, function(drawLUCK)
+      val.DRAW_LUCK = drawLUCK
+      return
+    end)
+
+    createFrame4(scrollingFrame2, "â¡  Fire Prompt", function() return val.AUTOFARM_FIRE_PROMPT end, function(autofarmFIREPROMPT)
+      val.AUTOFARM_FIRE_PROMPT = autofarmFIREPROMPT
+      return
+    end)
+
+    createFrame4(scrollingFrame2, "â  NoClip", function() return noclipPERSISTENT end, function(p42)
+      noclipPERSISTENT = p42
+
+      if p42 then
+        iterate4(localPlayer.Character)
+        helper6()
+      else
+        if not val22 then
+          iterate()
+          safeCall3()
+        end
+      end
+
+      return
+    end)
+
+    scrollingFrame2.CanvasSize = UDim2.new(0, 0, 0, 308)
+    return
+  end
+end
+
+function updateAutofarmBtn()
+  if not udim22 then
+    return
+  else
+    if val16 then
+      udim22.Text = "â¹  STOP AUTOFARM  [M]"
+      udim22.BackgroundColor3 = element10.redDim
+      udim22.TextColor3 = element10.red
+    else
+      udim22.Text = "â¶  START AUTOFARM  [M]"
+      udim22.BackgroundColor3 = element10.greenDim
+      udim22.TextColor3 = element10.green
+    end
+
+    return
+  end
+end
+
+function rebuildEggList()
+
+  if not val73 then
+    return
+  else
+
+    for index12, value15 in ipairs(val73:GetChildren()) do
+      if (value15:IsA("TextButton")) then
+        value15:Destroy()
+      end
+    end
+
+    local val84 = {}
+
+    for key5, value16 in pairs(val6) do
+      local val85 = safeCall(key5)
+
+      local magnitude = val85 and (currentCamera.CFrame.Position - val85).Magnitude or math.huge
+
+      table.insert(val84, {
+        model = key5, name = key5.Name, dist = magnitude, luck = value16.luck or 0, })
+    end
+
+    table.sort(val84, function(p43, p44)
+      if p43.luck ~= p44.luck then
+        return p43.luck > p44.luck
+      else
+        return p43.dist < p44.dist
+      end
+    end)
+
+    if val69 then
+      val69.Text = tostring(#val84)
+    end
+
+    if val70 then
+      val70.Text = tostring(count)
+    end
+
+    if val72 and #val84 > 0 then
+      val72.Text = helper(val84[1].luck)
+    end
+
+    if _G.__nemoLive then
+      if _G.__nemoLive.egg then
+        _G.__nemoLive.egg.Text = tostring(#val84)
+      end
+
+      if _G.__nemoLive.luck and #val84 > 0 then
+        _G.__nemoLive.luck.Text = helper(val84[1].luck)
+      end
+    end
+
+    for index13, value17 in ipairs(val84) do
+      local element12 = value17
+
+      local textButton6 = Instance.new("TextButton")
+      textButton6.Name = string.format("%05d_%s", 99999 - index13, element12.name)
+      textButton6.Parent = val73
+      textButton6.BackgroundColor3 = element10.panelLight
+      textButton6.BorderSizePixel = 0
+      textButton6.Size = UDim2.new(1, -4, 0, 38)
+      textButton6.Text = ""
+      textButton6.AutoButtonColor = false
+
+      local uiCorner20 = Instance.new("UICorner")
+      uiCorner20.CornerRadius = UDim.new(0, 6)
+      uiCorner20.Parent = textButton6
+
+      local uiPadding3 = Instance.new("UIPadding")
+      uiPadding3.PaddingLeft = UDim.new(0, 12)
+      uiPadding3.PaddingRight = UDim.new(0, 12)
+      uiPadding3.Parent = textButton6
+
+      local textLabel21 = Instance.new("TextLabel")
+      textLabel21.Parent = textButton6
+      textLabel21.BackgroundTransparency = 1
+      textLabel21.Position = UDim2.new(0, 0, 0, 0)
+      textLabel21.Size = UDim2.new(0, 30, 1, 0)
+      textLabel21.Font = Enum.Font.GothamBold
+      textLabel21.Text = "#" .. index13
+      textLabel21.TextColor3 = element10.accent
+      textLabel21.TextSize = 12
+      textLabel21.TextXAlignment = Enum.TextXAlignment.Left
+
+      local textLabel22 = Instance.new("TextLabel")
+      textLabel22.Parent = textButton6
+      textLabel22.BackgroundTransparency = 1
+      textLabel22.Position = UDim2.new(0, 36, 0, 0)
+      textLabel22.Size = UDim2.new(0.5, 0, 1, 0)
+      textLabel22.Font = Enum.Font.GothamSemibold
+      textLabel22.Text = element12.name
+      textLabel22.TextColor3 = element10.text
+      textLabel22.TextSize = 12
+      textLabel22.TextXAlignment = Enum.TextXAlignment.Left
+
+      local textLabel23 = Instance.new("TextLabel")
+      textLabel23.Parent = textButton6
+      textLabel23.BackgroundTransparency = 1
+      textLabel23.Position = UDim2.new(0.5, 0, 0, 0)
+      textLabel23.Size = UDim2.new(0.5, 0, 1, 0)
+      textLabel23.Font = Enum.Font.GothamBold
+      textLabel23.Text = "â¦ " .. (helper(element12.luck)) .. "  Â·  " .. (math.floor(element12.dist)) .. "m"
+      textLabel23.TextColor3 = element10.pink
+      textLabel23.TextSize = 11
+      textLabel23.TextXAlignment = Enum.TextXAlignment.Right
+
+      textButton6.MouseEnter:Connect(function()
+        textButton6.BackgroundColor3 = Color3.fromRGB(48, 48, 62)
+        return
+      end)
+
+      textButton6.MouseLeave:Connect(function()
+        textButton6.BackgroundColor3 = element10.panelLight
+        return
+      end)
+
+      textButton6.MouseButton1Click:Connect(function()
+        local val86 = safeCall(element12.model)
+
+        if val86 then
+          val33(val86 + (Vector3.new(0, 2, 0)), val.EGG_TWEEN_DURATION)
+        end
+
+        return
+      end)
+    end
+
+    val73.CanvasSize = UDim2.new(0, 0, 0, #val84 * 42 + 8)
+    return
+  end
+end
+
+local val87 = 0
+local val88 = 0
+local val89 = tick()
+local val90 = 0
+
+runService.Heartbeat:Connect(function()
+  val88 = val88 + 1
+
+  if (tick()) - val89 >= 1 then
+    val90 = val88
+    val88 = 0
+    val89 = tick()
+  end
+
+  val87 = val87 + 1
+
+  if val87 < 30 then
+    return
+  else
+    val87 = 0
+    local position2 = currentCamera.CFrame.Position
+
+    for key6, value18 in pairs(val6) do
+      if key6.Parent then
+        value18.luck = helper4(key6)
+        local val91 = safeCall(key6)
+
+        if val91 and value18.label then
+          local magnitude2 = (position2 - val91).Magnitude
+          local val92 = {}
+
+          if val.DRAW_NAME then
+            table.insert(val92, key6.Name)
+          end
+
+          if val.DRAW_DISTANCE then
+            table.insert(val92, string.format("[%dm]", math.floor(magnitude2)))
+          end
+
+          value18.label.Text = table.concat(val92, "  ")
+        end
+
+        if value18.luckLabel then
+          value18.luckLabel.Text = "â¦ " .. (helper(value18.luck))
+        end
+      end
+
+      if value18.highlight then
+
+        value18.highlight.Enabled = val.DRAW_HIGHLIGHT and val8
+      end
+
+      if value18.billboard then
+        local val93 = val8
+        local enabled = val93
+
+        if val93 then
+          local drawNAME3 = val.DRAW_NAME
+          local drawDISTANCE3 = drawNAME3
+
+          if not drawNAME3 then
+
+            drawDISTANCE3 = val.DRAW_DISTANCE or val.DRAW_LUCK
+          end
+
+          enabled = drawDISTANCE3
+        end
+
+        value18.billboard.Enabled = enabled
+      end
+    end
+
+    if udim2 then
+      udim2.Text = tostring(val90)
+    end
+
+    if val71 then
+
+      val71.Text = val16 and "FARMING" or "IDLE"
+    end
+
+    if _G.__nemoLive and _G.__nemoLive.fps then
+      _G.__nemoLive.fps.Text = tostring(val90)
+    end
+
+    return
+  end
+end)
+
+task.spawn(function()
+  while true do
+    task.wait(1)
+    local val94 = helper2()
+
+    if val94 ~= object2 then
+      for key7 in pairs(val6) do
+        safeCall2(key7)
+      end
+
+      object2 = val94
+      iterate8()
+    else
+      iterate8()
+    end
+  end
+end)
+
+createScreenGui()
+iterate8()
+rebuildEggList()
+switchPage("home")
+updateAutofarmBtn()
+local val95 = object2
+local val96 = val95
+
+if val95 then
+
+  val96 = #(object2:GetChildren())
+end
+
+print("[NemoHub] loaded â eggs:", val96 or 0)
+print("[NemoHub] keys: RCTRL esp | RSHIFT panel | RALT plot | M farm | RBRACKET noclip")
+
+userInputService.InputBegan:Connect(function(input, p45)
+
+  if p45 then
+    return
+  else
+    if input.KeyCode == val.TOGGLE_KEY then
+
+      val8 = not val8
+
+      local val97 = "ESP " .. (val8 and "ON" or "OFF")
+
+      showToast(val97, "toggled", val8 and element10.green or element10.red)
+    else
+      if input.KeyCode == val.PANEL_KEY then
+        if main then
+          main.Visible = not main.Visible
+
+          if textButton2 then
+            textButton2.Visible = not main.Visible
+          end
+        end
+      else
+        if input.KeyCode == val.PLOT_KEY then
+          helper7("manual keybind")
+        else
+          if input.KeyCode == val.AUTOFARM_KEY then
+            if val16 then
+              stopAutofarm()
+            else
+              startAutofarm()
+            end
+          else
+            if input.KeyCode == val.NOCLIP_KEY then
+              noclipPERSISTENT = not noclipPERSISTENT
+
+              if noclipPERSISTENT then
+                iterate4(localPlayer.Character)
+                helper6()
+              else
+                if not val22 then
+                  iterate()
+                  safeCall3()
+                end
+              end
+
+              local val98 = "NoClip " .. (noclipPERSISTENT and "ON" or "OFF")
+
+              showToast(val98, "", noclipPERSISTENT and element10.green or element10.red)
+            end
+          end
+        end
+      end
+    end
+
+    return
+  end
+end)
+
+getgenv().__nemo_hub = {
+  destroy = function()
+    val8 = false
+    stopAutofarm()
+    safeCall4()
+
+    for key8 in pairs(val6) do
+      safeCall2(key8)
+    end
+
+    if main then
+      pcall(function()
+
+        main.Parent:Destroy()
+        return
+      end)
+    end
+
+    if nemoHubToasts then
+      pcall(function()
+
+        nemoHubToasts:Destroy()
+        return
+      end)
+    end
+
+    safeCall3()
+    getgenv().__nemo_hub = nil
+    return
+  end, startAutofarm = startAutofarm, stopAutofarm = stopAutofarm, isAutofarming = function() return val16 end, showToast = showToast, }
