@@ -1,12 +1,3 @@
-local destroy = getgenv().__nemo_hub and getgenv().__nemo_hub.destroy
-
-if destroy then
-  pcall(function()
-    getgenv().__nemo_hub.destroy()
-    return
-  end)
-end
-
 local element = game
 
 local element2 = element.GetService(element, "Players")
